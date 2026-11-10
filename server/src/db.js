@@ -5,6 +5,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import ws from 'ws';
 import { config } from './config.js';
 import { SEED_CHALLENGES } from './factors.js';
 
@@ -25,6 +26,8 @@ export class DbError extends Error {
 function createSupabaseDb() {
   const sb = createClient(config.supabaseUrl, config.supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    // supabase-js needs a WebSocket implementation on Node < 22 even though we never open a realtime channel
+    realtime: { transport: globalThis.WebSocket || ws },
   });
   const fail = (error) => {
     throw new DbError(error.message || 'Database error', error.code);
