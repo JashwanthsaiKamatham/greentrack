@@ -15,7 +15,7 @@ export const config = {
   supabaseAnonKey: clean(env.SUPABASE_ANON_KEY),
   supabaseServiceKey: clean(env.SUPABASE_SERVICE_ROLE_KEY),
   geminiKey: clean(env.GEMINI_API_KEY),
-  geminiModel: clean(env.GEMINI_MODEL) || 'gemini-2.5-flash',
+  geminiModel: clean(env.GEMINI_MODEL) || 'gemini-3.8-flash',
   clientUrls: clean(env.CLIENT_URL)
     .split(',')
     .map((s) => s.trim().replace(/\/+$/, ''))

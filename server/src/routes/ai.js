@@ -17,17 +17,31 @@ const aiLimiter = rateLimit({
   message: { error: 'You are asking the AI coach very quickly. Please wait a few minutes.' },
 });
 
-const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+// Tried in order. Google retires models and has demand spikes, so we never depend on a single one.
+const FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+const ATTEMPT_TIMEOUT_MS = 20000;
+const TOTAL_BUDGET_MS = 50000;
+const STICKY_MS = 10 * 60 * 1000;
+let lastGood = { model: null, at: 0 };
+
+function modelOrder() {
+  const base = [...new Set([config.geminiModel, ...FALLBACK_MODELS])];
+  // If the preferred model was busy a moment ago, start with the one that just worked (for a few minutes).
+  if (lastGood.model && Date.now() - lastGood.at < STICKY_MS) return [lastGood.model, ...base.filter((m) => m !== lastGood.model)];
+  return base;
+}
 
 /** Calls Google Gemini from the backend only. The API key never reaches the browser. */
 async function callGemini(system, prompt, { json = false } = {}) {
   if (!config.geminiKey) throw new HttpError(503, 'The AI coach is not configured yet.');
-  const models = [...new Set([config.geminiModel, ...FALLBACK_MODELS])];
+  const started = Date.now();
   let lastError = 'unknown error';
 
-  for (const model of models) {
+  for (const model of modelOrder()) {
+    const remaining = TOTAL_BUDGET_MS - (Date.now() - started);
+    if (remaining < 3000) break;
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 30000);
+    const timer = setTimeout(() => ctrl.abort(), Math.min(ATTEMPT_TIMEOUT_MS, remaining));
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
@@ -43,10 +57,17 @@ async function callGemini(system, prompt, { json = false } = {}) {
       if (!r.ok) {
         lastError = `${model}: ${r.status} ${data?.error?.message || ''}`.slice(0, 300);
         if (r.status === 401 || r.status === 403) break; // bad key - other models will not help
-        continue;
+        continue; // retired model (404), busy (503), rate limited (429)... try the next one
       }
-      const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
-      if (text) return { text, model };
+      const text = (data?.candidates?.[0]?.content?.parts || [])
+        .filter((p) => !p.thought)
+        .map((p) => p.text || '')
+        .join('')
+        .trim();
+      if (text) {
+        lastGood = { model, at: Date.now() };
+        return { text, model };
+      }
       lastError = `${model}: empty response`;
     } catch (e) {
       lastError = `${model}: ${e.name === 'AbortError' ? 'timed out' : e.message}`;
