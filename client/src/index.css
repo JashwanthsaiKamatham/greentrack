@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-canvas font-sans text-slate-800 antialiased;
+    min-height: 100dvh;
+  }
+  h1, h2, h3 {
+    @apply tracking-tight;
+  }
+  button, a, input, select, textarea {
+    @apply outline-none;
+  }
+  :focus-visible {
+    @apply ring-2 ring-emerald-400 ring-offset-2 ring-offset-canvas;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/80 bg-white/70 shadow-glass backdrop-blur-xl;
+  }
+  .card {
+    @apply min-w-0 rounded-3xl border border-slate-100 bg-white shadow-card;
+  }
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-800 transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 focus:ring-offset-0 sm:text-[15px];
+  }
+  input.input,
+  select.input {
+    @apply h-[46px] min-w-0;
+  }
+  input[type='date'].input {
+    @apply appearance-none;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-semibold text-slate-600;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition;
+  }
+  .chip-off {
+    @apply border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700;
+  }
+  .chip-on {
+    @apply border-emerald-500 bg-emerald-500 text-white shadow-glow;
+  }
+  .section-title {
+    @apply text-base font-bold text-slate-800;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent;
+  }
+}
