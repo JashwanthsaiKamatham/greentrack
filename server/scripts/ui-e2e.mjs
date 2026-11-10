@@ -1,5 +1,7 @@
 import { chromium } from 'playwright';
 const BASE = process.env.BASE || 'http://localhost:5173';
+// Where the API lives. Empty = same origin as the page (local). Set to the Render URL when testing production.
+const API_BASE = (process.env.API_BASE || '').replace(/\/+$/, '');
 const shots = '/tmp/pw/shots';
 const errors = [];
 const browser = await chromium.launch();
@@ -42,7 +44,7 @@ await page.getByRole('dialog').waitFor({ state: 'detached' });
 await page.getByText('Drive to office').first().waitFor();
 
 step('seed more data through the API');
-await page.evaluate(async () => {
+await page.evaluate(async (apiBase) => {
   const token = localStorage.getItem('gt_token');
   const d = (n) => { const x = new Date(); x.setDate(x.getDate() - n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
   const rows = [
@@ -54,10 +56,10 @@ await page.evaluate(async () => {
     ['energy', 'electricity', 110, 35], ['water', 'tap', 3200, 40], ['waste', 'landfill', 9, 38], ['energy', 'electricity', 140, 65], ['water', 'tap', 3900, 70],
   ];
   for (const [category, subtype, quantity, ago] of rows) {
-    const r = await fetch('/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ category, subtype, quantity, entry_date: d(ago) }) });
+    const r = await fetch(apiBase + '/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ category, subtype, quantity, entry_date: d(ago) }) });
     if (!r.ok) throw new Error('seed failed ' + r.status);
   }
-});
+}, API_BASE);
 
 step('refresh keeps the session and data');
 await page.reload({ waitUntil: 'networkidle' });

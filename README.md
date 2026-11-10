@@ -2,6 +2,16 @@
 
 GreenTrack helps urban communities, small businesses and campuses **track, measure and reduce** their environmental impact.
 
+## Live
+
+| | Link |
+| --- | --- |
+| App (frontend, Vercel) | https://greentrack-ashen.vercel.app |
+| API (backend, Render) | https://greentrack-api-0uj4.onrender.com |
+| API health check | https://greentrack-api-0uj4.onrender.com/api/health |
+
+The backend runs on Render's free plan, which sleeps after about 15 minutes without visitors. The first request after a sleep can take up to a minute; the app shows a "Waking up the server" message while it waits.
+
 ## Features
 
 - **Carbon dashboard** - daily / weekly / monthly CO2e from commute, energy, food, waste, water and shopping, with trend chart, category breakdown and a monthly carbon budget.
@@ -70,7 +80,20 @@ Without Supabase keys the server starts in an in-memory demo mode (development o
 
 ## Deployment
 
-- Backend: Render web service, root directory `server`, start command `npm start`.
-- Frontend: Vercel, root directory `client`, env var `VITE_API_BASE_URL` = Render URL.
+Pushing to the `main` branch redeploys both sides.
+
+- Backend: Render web service, root directory `server`, build `npm install`, start `npm start`, Node 22.
+  Environment variables: `NODE_ENV=production`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `CLIENT_URL` (the Vercel address or addresses, comma separated).
+- Frontend: Vercel, root directory `client`, environment variable `VITE_API_BASE_URL` = the Render URL.
+
+## Tests
+
+```bash
+cd server
+# API: auth, CRUD, user isolation, challenges, AI (creates and uses throw-away accounts)
+API_URL=http://localhost:4000 EXPECT_AI=1 node scripts/smoke-test.js
+# Browser walkthrough on desktop and phone sizes (needs Playwright installed)
+BASE=http://localhost:4000 node scripts/ui-e2e.mjs
+```
 
 Emission factors are rounded averages meant for awareness, not certified carbon accounting.
